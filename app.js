@@ -829,20 +829,20 @@ function injectDynamicCSS() {
         
         @media (max-width: 767px) {
             .floating-label {
-                font-size: 1rem !important;
-                padding: 4px 8px;
+                font-size: 0.65rem !important;
+                padding: 2px 4px !important;
             }
             .node-label {
-                font-size: 1rem !important;
+                font-size: 0.6rem !important;
             }
             .member-label {
-                font-size: 1rem !important;
+                font-size: 0.58rem !important;
             }
             .force-label {
-                font-size: 1rem !important;
+                font-size: 0.65rem !important;
             }
             .support-label {
-                font-size: 1rem !important;
+                font-size: 0.6rem !important;
             }
         }
     `;
@@ -1224,8 +1224,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial run
     solveAndRedraw();
     
-    // Zoom in a bit and center
-    camera.position.set(0, 100, 550);
+    // Zoom in a bit and center (adjust camera distance for mobile to make the truss fit)
+    const isMobile = window.innerWidth < 768;
+    camera.position.set(0, 100, isMobile ? 1000 : 550);
     controls.target.set(0, 100, 0);
     controls.update();
 });
