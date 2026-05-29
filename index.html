@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Truss Analyzer - Interaktywny Projekt Kratownicy</title>
+    <meta name="description" content="Interaktywne narzędzie 3D do projektowania i analizy statycznej kratownic w czasie rzeczywistym.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Three.js and OrbitControls via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1 class="logo-text">3D TRUSS <span class="accent-text">ANALYZER</span></h1>
+            <p class="subtitle">Interaktywna analiza statyczna kratownicy przestrzennej</p>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Left Sidebar: Controls -->
+            <section id="panel-controls" class="panel left-panel active-mobile" aria-labelledby="controls-title">
+                <h2 id="controls-title" class="panel-title">PARAMETRY WEJŚCIOWE</h2>
+                
+                <div class="panel-section">
+                    <h3 class="section-title">GEOMETRIA (mm)</h3>
+                    <div class="input-group">
+                        <label for="dim-a">Wymiar 'a' (szerokość)</label>
+                        <div class="input-control">
+                            <input type="range" id="dim-a" min="100" max="400" step="10" value="200">
+                            <span class="value-display" id="val-a">200</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="dim-b">Wymiar 'b' (wysokość)</label>
+                        <div class="input-control">
+                            <input type="range" id="dim-b" min="100" max="400" step="10" value="200">
+                            <span class="value-display" id="val-b">200</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3 class="section-title">SIŁY (N) i KĄTY (°)</h3>
+                    <div class="input-group">
+                        <label for="force-p1">P1 (w dół) [N]</label>
+                        <div class="input-control">
+                            <input type="range" id="force-p1" min="0" max="3000" step="50" value="1000">
+                            <span class="value-display" id="val-p1">1000</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="force-p2">P2 (w dół) [N]</label>
+                        <div class="input-control">
+                            <input type="range" id="force-p2" min="0" max="3000" step="50" value="1500">
+                            <span class="value-display" id="val-p2">1500</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="force-p3">P3 [N]</label>
+                        <div class="input-control">
+                            <input type="range" id="force-p3" min="0" max="3000" step="50" value="800">
+                            <span class="value-display" id="val-p3">800</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="angle-alpha">Kąt &alpha; (&deg;)</label>
+                        <div class="input-control">
+                            <input type="range" id="angle-alpha" min="0" max="90" step="5" value="30">
+                            <span class="value-display" id="val-alpha">30</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="force-p4">P4 [N]</label>
+                        <div class="input-control">
+                            <input type="range" id="force-p4" min="0" max="3000" step="50" value="600">
+                            <span class="value-display" id="val-p4">600</span>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="angle-beta">Kąt &beta; (&deg;)</label>
+                        <div class="input-control">
+                            <input type="range" id="angle-beta" min="0" max="90" step="5" value="45">
+                            <span class="value-display" id="val-beta">45</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-section">
+                    <h3 class="section-title">WIZUALIZACJA</h3>
+                    <div class="checkbox-group">
+                        <label class="switch-container">
+                            <input type="checkbox" id="show-labels" checked>
+                            <span class="switch-slider"></span>
+                            Pokaż etykiety prętów
+                        </label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="switch-container">
+                            <input type="checkbox" id="show-forces" checked>
+                            <span class="switch-slider"></span>
+                            Pokaż wektory sił
+                        </label>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="switch-container">
+                            <input type="checkbox" id="deform-truss">
+                            <span class="switch-slider"></span>
+                            Pokaż odkształcenie (x100)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="panel-section pico-section">
+                    <h3 class="section-title">POŁĄCZENIE Z RASPBERRY PI PICO</h3>
+                    
+                    <!-- Source Mode Toggle -->
+                    <div class="input-group">
+                        <label class="switch-container mode-toggle-container">
+                            <input type="checkbox" id="pico-mode">
+                            <span class="switch-slider"></span>
+                            Tryb: Pomiary Live (Pico)
+                        </label>
+                    </div>
+                    
+                    <!-- Connection tabs -->
+                    <div class="pico-tabs">
+                        <button class="tab-btn active" id="tab-usb" type="button">USB Serial</button>
+                        <button class="tab-btn" id="tab-wifi" type="button">Wi-Fi</button>
+                    </div>
+                    
+                    <!-- USB Serial Panel -->
+                    <div id="panel-usb" class="pico-tab-content active">
+                        <div class="input-group">
+                            <label for="pico-baud">Baud Rate</label>
+                            <select id="pico-baud" class="pico-select">
+                                <option value="115200" selected>115200</option>
+                                <option value="9600">9600</option>
+                            </select>
+                        </div>
+                        <div class="pico-actions">
+                            <button id="btn-usb-connect" class="pico-btn primary">Połącz USB</button>
+                            <button id="btn-usb-disconnect" class="pico-btn secondary" disabled>Rozłącz</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Wi-Fi Panel -->
+                    <div id="panel-wifi" class="pico-tab-content">
+                        <div class="input-group">
+                            <label for="pico-ip">Adres IP Pico</label>
+                            <input type="text" id="pico-ip" class="pico-input" value="192.168.4.1">
+                        </div>
+                        <div class="input-group">
+                            <label for="pico-wifi-proto">Protokół</label>
+                            <select id="pico-wifi-proto" class="pico-select">
+                                <option value="ws" selected>WebSocket</option>
+                                <option value="http">HTTP GET (Polling)</option>
+                            </select>
+                        </div>
+                        <div class="pico-actions">
+                            <button id="btn-wifi-connect" class="pico-btn primary">Połącz Wi-Fi</button>
+                            <button id="btn-wifi-disconnect" class="pico-btn secondary" disabled>Rozłącz</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Connection Status and Log -->
+                    <div class="pico-status-area">
+                        <div class="status-left">
+                            <span class="status-indicator">Status: <strong id="pico-status" class="status-disconnected">Rozłączono</strong></span>
+                            <span class="status-glow-dot disconnected" id="pico-glow-dot"></span>
+                        </div>
+                        <button id="btn-pico-test" class="pico-btn dev" title="Generuje symulowane pomiary live na potrzeby debugowania">Symuluj Pico</button>
+                    </div>
+
+                    <div class="pico-log-container">
+                        <div class="pico-log-title">Raw Data Log:</div>
+                        <pre id="pico-log" class="pico-log-display">Brak danych...</pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Viewport: 3D Visualization -->
+            <section id="panel-viewport" class="viewport-container" aria-label="Okno wizualizacji 3D">
+                <!-- 3D Canvas will be injected here -->
+                <div id="canvas3d"></div>
+
+                <!-- Info Overlay (Stress Legend) -->
+                <div class="legend-overlay">
+                    <h4 class="legend-title">LEGENDA NAPRĘŻEŃ</h4>
+                    <ul class="legend-list">
+                        <li class="legend-item">
+                            <span class="legend-color color-red"></span>
+                            Najbardziej obciążone (Czerwony)
+                        </li>
+                        <li class="legend-item">
+                            <span class="legend-color color-blue"></span>
+                            Pośrednio obciążone (Niebieski)
+                        </li>
+                        <li class="legend-item">
+                            <span class="legend-color color-dark-green"></span>
+                            Niskie obciążenie (Ciemnozielony)
+                        </li>
+                        <li class="legend-item">
+                            <span class="legend-color color-light-green"></span>
+                            Pręty zerowe (Jasnozielony)
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Floating 3D Navigation Tip -->
+                <div class="nav-tip">
+                    <span>Lewy przycisk myszy: obrót | Prawy przycisk myszy: przesunięcie | Scroll: zoom</span>
+                </div>
+            </section>
+
+            <!-- Right Sidebar: Results -->
+            <section id="panel-results" class="panel right-panel" aria-labelledby="results-title">
+                <h2 id="results-title" class="panel-title">ODCZYTY TENSOMETRÓW</h2>
+                
+                <div class="table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Pręt</th>
+                                <th class="num-col">Siła [N]</th>
+                                <th>Typ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="summary-section">
+                    <h3 class="section-title">REAKCJE PODPOROWE</h3>
+                    <div class="reaction-item">
+                        <span>Podpora A (Lewa, Pinned):</span>
+                        <div class="reaction-vals">
+                            <span>R<sub>Ax</sub>: <strong id="react-ax">0.0</strong> N</span>
+                            <span>R<sub>Ay</sub>: <strong id="react-ay">0.0</strong> N</span>
+                        </div>
+                    </div>
+                    <div class="reaction-item">
+                        <span>Podpora B (Prawa, Roller):</span>
+                        <div class="reaction-vals">
+                            <span>R<sub>By</sub>: <strong id="react-by">0.0</strong> N</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Mobile Navigation Bar -->
+        <nav class="mobile-nav" aria-label="Nawigacja mobilna">
+            <button class="mobile-nav-btn active" data-target="panel-controls" type="button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="2" y1="14" x2="6" y2="14"></line><line x1="10" y1="8" x2="14" y2="8"></line><line x1="18" y1="16" x2="22" y2="16"></line></svg>
+                <span>Parametry</span>
+            </button>
+            <button class="mobile-nav-btn" data-target="panel-viewport" type="button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <span>Wizualizacja</span>
+            </button>
+            <button class="mobile-nav-btn" data-target="panel-results" type="button">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <span>Wyniki</span>
+            </button>
+        </nav>
+    </div>
+    
+    <!-- JS Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
